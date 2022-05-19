@@ -1,3 +1,8 @@
+function behavior(point, direction, line) {
+    let lineAngle = Math.atan2(line.v.y-line.u.y,line.v.x-line.u.x)
+    return {point:point,direction:2*lineAngle-direction}    
+}
+
 let context = canvas.getContext("2d")
 
 let figure=[{x:300,y:400},{x:600,y:400},{x:450,y:400-150*Math.sqrt(3)}]
@@ -12,9 +17,24 @@ let arrowEnd = {
     radius: 10
 }
 let points=new Array(10)
+let last_direction=arrowEnd.arg
 let offset = {
     top: canvas.offsetTop,
     left: canvas.offsetLeft
+}
+
+let line_colors=["green","red"]
+
+function canvas_arrow(context, fromx, fromy, tox, toy) {
+    var headlen = 10; // length of head in pixels
+    var dx = tox - fromx;
+    var dy = toy - fromy;
+    var angle = Math.atan2(dy, dx);
+    context.moveTo(fromx, fromy);
+    context.lineTo(tox, toy);
+    context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    context.moveTo(tox, toy);
+    context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
 }
 
 function draw(highlight_cursor=false, highlight_arrowEnd=false) {
@@ -35,61 +55,86 @@ function draw(highlight_cursor=false, highlight_arrowEnd=false) {
     context.fill();
     if (highlight_cursor) {
         context.lineWidth = 3;
-        context.strokeStyle = 'gray';
+        context.strokeStyle = 'blue';
         context.stroke();
     }
-    context.beginPath();
-    context.arc(cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg),cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg),arrowEnd.radius,0,2*Math.PI)
-    context.fillStyle="blue"
-    context.fill()
+    context.beginPath()
+    canvas_arrow(context,cursor.x,cursor.y,cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg), cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg))
+    context.strokeStyle="black"
+    context.stroke()
     if (highlight_arrowEnd) {
+        context.beginPath()
+        context.arc(cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg), cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg),arrowEnd.radius,0,2*Math.PI)
         context.lineWidth = 3;
-        context.strokeStyle = 'gray';
+        context.strokeStyle = 'blue';
         context.stroke();
     }
-    context.beginPath();
-    context.moveTo(cursor.x, cursor.y);
-    context.lineTo(cursor.x+1000*Math.cos(arrowEnd.arg), cursor.y+1000*Math.sin(arrowEnd.arg));
-    context.strokeStyle = 'gray';
-    context.stroke();
-    let newPoint = nextPoint(cursor,arrowEnd.arg)
+    /* let newPoint = nextPoint(cursor,arrowEnd.arg)
     if (newPoint!=null) {
         context.beginPath();
         context.moveTo(newPoint.x, newPoint.y);
         context.lineTo(newPoint.x+1000*Math.cos(newPoint.direction), newPoint.y+1000*Math.sin(newPoint.direction));
         context.strokeStyle = 'green';
         context.stroke();
+    } */
+    for (let i = 0; i < points.length-1&&points[i]!=null; i++) {
+        if (points[i+1]==null) {
+            context.beginPath();
+            context.moveTo(points[i].x, points[i].y);
+            context.lineTo(points[i].x+1000*Math.cos(last_direction), points[i].y+1000*Math.sin(last_direction));
+            context.strokeStyle = line_colors[i%2];
+            context.stroke();   
+        } else {
+            context.beginPath();
+            context.moveTo(points[i].x, points[i].y);
+            context.lineTo(points[i+1].x, points[i+1].y);
+            context.strokeStyle = line_colors[i%2];
+            context.stroke();
+            context.beginPath();
+            context.arc(points[i+1].x, points[i+1].y, 5, 0, 2 * Math.PI, false);
+            context.fillStyle=line_colors[i%2]
+            context.fill();
+        }
     }
 }
 
 function nextPoint(point,direction) {
     let line = null
+    let temp_point={x:point.x+1000*Math.cos(direction),y:point.y+1000*Math.sin(direction)}
     for (let i = 0; i < figure.length; i++) {
         if (i==figure.length-1) {
             ip1=0
         }else{
             ip1=i+1
         }
-        if(doIntersect({u:figure[i],v:figure[ip1]}, {u:point,v:{x:point.x+1000*Math.cos(direction),y:point.y+1000*Math.sin(direction)}})){
+        if(doIntersect({u:figure[i],v:figure[ip1]}, {u:{x:point.x+Math.cos(direction),y:point.y+Math.sin(direction)},v:{x:temp_point.x+Math.cos(direction),y:temp_point.y+Math.sin(direction)}})){
             line={u:figure[i],v:figure[ip1]}
+            let result = line_intersect(line, {u:point,v:{x:point.x+Math.cos(direction),y:point.y+Math.sin(direction)}})
+            temp_point = {x:result.x,y:result.y}
         }
     }
     /* a1=Math.tan(direction)
     b1=point.y-a1* */
-    let newPoint = null
+    let newPointDirection = null
     if (line!=null) {
-        let result = line_intersect(line, {u:point,v:{x:point.x+Math.cos(direction),y:point.y+Math.sin(direction)}})
-        newPoint = {x:result.x,y:result.y}
-        let lineAngle = Math.atan2(line.v.y-line.u.y,line.v.x-line.u.x)
-        newPoint.direction=2*lineAngle - direction
+        newPointDirection = behavior(temp_point,direction,line)
     }
-    return newPoint
+    return newPointDirection
 }
 
 function createPoints(){
-
+    last_direction=arrowEnd.arg
+    points=new Array(parseInt(lineNumber_input.value)+1)
+    points[0]=cursor
+    let result=null
+    for (let i = 0; i < points.length-1 && points[i]!=null; i++) {
+        result = nextPoint(points[i],last_direction)
+        points[i+1]=result!=null ? result.point : null
+        last_direction=result!=null ? result.direction : last_direction
+    }
 }
 
+createPoints()
 draw()
 
 let inCursor = false;
@@ -106,9 +151,11 @@ canvas.onmousemove = function (e) {
     if (posInCursor != null) {
         cursor.x = e.clientX - posInCursor.x - offset.left
         cursor.y = e.clientY - posInCursor.y - offset.top
+        createPoints()
     }
     if (posInArrowEnd != null) {
         arrowEnd.arg = posInArrowEnd.arg + Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))
+        createPoints()
     }
     draw(inCursor, inArrowEnd)
 }
@@ -128,5 +175,9 @@ canvas.onmouseup = function (e) {
 canvas.onmouseleave = function () {
     posInCursor = null
     posInArrowEnd = null
+    draw()
+}
+lineNumber_input.onchange=function(e){
+    createPoints()
     draw()
 }
