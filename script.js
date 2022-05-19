@@ -11,7 +11,7 @@ let arrowEnd = {
     r: 100,
     radius: 10
 }
-// let points=new Array(10)
+let points=new Array(10)
 let offset = {
     top: canvas.offsetTop,
     left: canvas.offsetLeft
@@ -52,6 +52,14 @@ function draw(highlight_cursor=false, highlight_arrowEnd=false) {
     context.lineTo(cursor.x+1000*Math.cos(arrowEnd.arg), cursor.y+1000*Math.sin(arrowEnd.arg));
     context.strokeStyle = 'gray';
     context.stroke();
+    let newPoint = nextPoint(cursor,arrowEnd.arg)
+    if (newPoint!=null) {
+        context.beginPath();
+        context.moveTo(newPoint.x, newPoint.y);
+        context.lineTo(newPoint.x+1000*Math.cos(newPoint.direction), newPoint.y+1000*Math.sin(newPoint.direction));
+        context.strokeStyle = 'green';
+        context.stroke();
+    }
 }
 
 function nextPoint(point,direction) {
@@ -68,13 +76,17 @@ function nextPoint(point,direction) {
     }
     /* a1=Math.tan(direction)
     b1=point.y-a1* */
+    let newPoint = null
     if (line!=null) {
         let result = line_intersect(line, {u:point,v:{x:point.x+Math.cos(direction),y:point.y+Math.sin(direction)}})
-        console.log(result)
+        newPoint = {x:result.x,y:result.y}
+        let lineAngle = Math.atan2(line.v.y-line.u.y,line.v.x-line.u.x)
+        newPoint.direction=2*lineAngle - direction
     }
+    return newPoint
 }
 
-function points(){
+function createPoints(){
 
 }
 
@@ -94,11 +106,9 @@ canvas.onmousemove = function (e) {
     if (posInCursor != null) {
         cursor.x = e.clientX - posInCursor.x - offset.left
         cursor.y = e.clientY - posInCursor.y - offset.top
-        nextPoint(cursor,arrowEnd.arg)
     }
     if (posInArrowEnd != null) {
         arrowEnd.arg = posInArrowEnd.arg + Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))
-        nextPoint(cursor,arrowEnd.arg)
     }
     draw(inCursor, inArrowEnd)
 }
