@@ -12,7 +12,7 @@ let cursor = {
     radius: 20
 }
 let arrowEnd = {
-    arg: Math.PI/2,
+    arg: 0.713724379,
     r: 100,
     radius: 10
 }
