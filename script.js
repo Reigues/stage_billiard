@@ -141,7 +141,8 @@ let inCursor = false;
 let posInCursor = null
 
 let inArrowEnd = false;
-let posInArrowEnd = null
+let posInArrowEnd = null;
+let initialPos = null;
 
 canvas.onmousemove = function (e) {
     //inCursor= e.clientX<=cursor.x+cursor.width+offset.left&&e.clientX>=cursor.x+offset.left&&e.clientY<=cursor.y+cursor.height+offset.top&&e.clientY>=cursor.y+offset.top;
@@ -149,12 +150,12 @@ canvas.onmousemove = function (e) {
     inArrowEnd = Math.sqrt(Math.pow(e.clientX - (cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg)) - offset.left, 2) + Math.pow(e.clientY - (cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg)) - offset.top, 2)) <= arrowEnd.radius
 
     if (posInCursor != null) {
-        cursor.x = e.clientX - posInCursor.x - offset.left
-        cursor.y = e.clientY - posInCursor.y - offset.top
+        cursor.x = initialPos.x - Math.pow(10,-range_input.value+1)*(initialPos.x - e.clientX) - posInCursor.x - offset.left
+        cursor.y = initialPos.y - Math.pow(10,-range_input.value+1)*(initialPos.y - e.clientY) - posInCursor.y - offset.top
         createPoints()
     }
     if (posInArrowEnd != null) {
-        arrowEnd.arg = posInArrowEnd.arg + Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))
+        arrowEnd.arg = posInArrowEnd.arg + initialPos.arg - Math.pow(10,-range_input.value+1)*(initialPos.arg - Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left)))
         createPoints()
     }
     draw(inCursor, inArrowEnd)
@@ -163,9 +164,11 @@ canvas.onmousemove = function (e) {
 canvas.onmousedown = function (e) {
     if (posInCursor == null && inCursor) {
         posInCursor = { x: e.clientX - cursor.x - offset.left, y: e.clientY - cursor.y - offset.top }
+        initialPos = {x:e.clientX - offset.left, y: e.clientY-offset.top}
     }
     if (posInArrowEnd == null && inArrowEnd) {
         posInArrowEnd = { arg: arrowEnd.arg - Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))}
+        initialPos = {arg:Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))}
     }
 }
 canvas.onmouseup = function (e) {
