@@ -12,7 +12,7 @@ let cursor = {
     radius: 20
 }
 let arrowEnd = {
-    arg: 0.713724379,
+    arg: 0.713724379, //arctan(sqrt(3)/2)
     r: 100,
     radius: 10
 }
@@ -37,7 +37,7 @@ function canvas_arrow(context, fromx, fromy, tox, toy) {
     context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
 }
 
-function draw(highlight_cursor=false, highlight_arrowEnd=false) {
+function draw(highlight_cursor=false, highlight_arrowEnd=false, isCursorModified=false, isArrowEndModified=false) {
 
     context.clearRect(0, 0, canvas.width, canvas.height)
     //context.fillRect(cursor.x,cursor.y,cursor.width,cursor.height)
@@ -96,6 +96,20 @@ function draw(highlight_cursor=false, highlight_arrowEnd=false) {
             context.fill();
         }
     }
+    if (isCursorModified) {
+        context.fillStyle="black"
+        context.font = "30px Arial";
+        context.fillText(`X = ${(cursor.x-figure[0].x).toFixed(range_input.value)}; Y = ${(figure[0].y-cursor.y).toFixed(range_input.value)}`, 10, 100);
+    }
+    if (isArrowEndModified) {
+        context.fillStyle="black"
+        context.font = "30px Arial";
+        context.fillText(`angle = ${(-arrowEnd.arg/Math.PI).toFixed(6)} PI`, 10, 100);
+    }
+}
+
+function angleFromPQ() {
+    return -Math.atan(Math.sqrt(3)/((2*p_input.value/q_input.value)+1))
 }
 
 function nextPoint(point,direction) {
@@ -134,6 +148,7 @@ function createPoints(){
     }
 }
 
+arrowEnd.arg=angleFromPQ()
 createPoints()
 draw()
 
@@ -150,15 +165,15 @@ canvas.onmousemove = function (e) {
     inArrowEnd = Math.sqrt(Math.pow(e.clientX - (cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg)) - offset.left, 2) + Math.pow(e.clientY - (cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg)) - offset.top, 2)) <= arrowEnd.radius
 
     if (posInCursor != null) {
-        cursor.x = initialPos.x - Math.pow(10,-range_input.value+1)*(initialPos.x - e.clientX) - posInCursor.x - offset.left
-        cursor.y = initialPos.y - Math.pow(10,-range_input.value+1)*(initialPos.y - e.clientY) - posInCursor.y - offset.top
+        cursor.x = initialPos.x - Math.pow(10,-range_input.value)*(initialPos.x - e.clientX) - posInCursor.x - offset.left
+        cursor.y = initialPos.y - Math.pow(10,-range_input.value)*(initialPos.y - e.clientY) - posInCursor.y - offset.top
         createPoints()
     }
     if (posInArrowEnd != null) {
-        arrowEnd.arg = posInArrowEnd.arg + initialPos.arg - Math.pow(10,-range_input.value+1)*(initialPos.arg - Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left)))
+        arrowEnd.arg = posInArrowEnd.arg + initialPos.arg - Math.pow(10,-range_input.value)*(initialPos.arg - Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left)))
         createPoints()
     }
-    draw(inCursor, inArrowEnd)
+    draw(inCursor, inArrowEnd, posInCursor != null, posInArrowEnd != null)
 }
 
 canvas.onmousedown = function (e) {
@@ -181,6 +196,16 @@ canvas.onmouseleave = function () {
     draw()
 }
 lineNumber_input.onchange=function(e){
+    createPoints()
+    draw()
+}
+p_input.onchange=function(){
+    arrowEnd.arg=angleFromPQ()
+    createPoints()
+    draw()
+}
+q_input.onchange=function(){
+    arrowEnd.arg=angleFromPQ()
     createPoints()
     draw()
 }
