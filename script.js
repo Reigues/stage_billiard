@@ -18,10 +18,26 @@ let arrowEnd = {
 }
 let points=new Array(10)
 let last_direction=arrowEnd.arg
-let offset = {
-    top: canvas.offsetTop,
-    left: canvas.offsetLeft
+
+function getCoords(elem) { // crossbrowser version
+    var box = elem.getBoundingClientRect();
+
+    var body = document.body;
+    var docEl = document.documentElement;
+
+    var scrollTop = window.pageYOffset || docEl.scrollTop || body.scrollTop;
+    var scrollLeft = window.pageXOffset || docEl.scrollLeft || body.scrollLeft;
+
+    var clientTop = docEl.clientTop || body.clientTop || 0;
+    var clientLeft = docEl.clientLeft || body.clientLeft || 0;
+
+    var top  = box.top +  scrollTop - clientTop;
+    var left = box.left + scrollLeft - clientLeft;
+
+    return { top: Math.round(top), left: Math.round(left) };
 }
+
+let offset = getCoords(canvas)
 
 let line_colors=["green","red"]
 
@@ -159,31 +175,35 @@ let inArrowEnd = false;
 let posInArrowEnd = null;
 let initialPos = null;
 
-canvas.onmousemove = function (e) {
-    //inCursor= e.clientX<=cursor.x+cursor.width+offset.left&&e.clientX>=cursor.x+offset.left&&e.clientY<=cursor.y+cursor.height+offset.top&&e.clientY>=cursor.y+offset.top;
-    inCursor = Math.sqrt(Math.pow(e.clientX - cursor.x - offset.left, 2) + Math.pow(e.clientY - cursor.y - offset.top, 2)) <= cursor.radius
-    inArrowEnd = Math.sqrt(Math.pow(e.clientX - (cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg)) - offset.left, 2) + Math.pow(e.clientY - (cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg)) - offset.top, 2)) <= arrowEnd.radius
+function mouseMove(e) {
+    //inCursor= e.pageX<=cursor.x+cursor.width+offset.left&&e.pageX>=cursor.x+offset.left&&e.pageY<=cursor.y+cursor.height+offset.top&&e.pageY>=cursor.y+offset.top;
+    inCursor = Math.sqrt(Math.pow(e.pageX - cursor.x - offset.left, 2) + Math.pow(e.pageY - cursor.y - offset.top, 2)) <= cursor.radius
+    inArrowEnd = Math.sqrt(Math.pow(e.pageX - (cursor.x+arrowEnd.r*Math.cos(arrowEnd.arg)) - offset.left, 2) + Math.pow(e.pageY - (cursor.y+arrowEnd.r*Math.sin(arrowEnd.arg)) - offset.top, 2)) <= arrowEnd.radius
 
     if (posInCursor != null) {
-        cursor.x = initialPos.x - Math.pow(10,-range_input.value)*(initialPos.x - e.clientX) - posInCursor.x - offset.left
-        cursor.y = initialPos.y - Math.pow(10,-range_input.value)*(initialPos.y - e.clientY) - posInCursor.y - offset.top
+        cursor.x = initialPos.x - Math.pow(10,-range_input.value)*(initialPos.x - e.pageX) - posInCursor.x - offset.left
+        cursor.y = initialPos.y - Math.pow(10,-range_input.value)*(initialPos.y - e.pageY) - posInCursor.y - offset.top
         createPoints()
     }
     if (posInArrowEnd != null) {
-        arrowEnd.arg = posInArrowEnd.arg + initialPos.arg - Math.pow(10,-range_input.value)*(initialPos.arg - Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left)))
+        arrowEnd.arg = posInArrowEnd.arg + initialPos.arg - Math.pow(10,-range_input.value)*(initialPos.arg - Math.atan2((e.pageY - cursor.y - offset.top),(e.pageX - cursor.x - offset.left)))
         createPoints()
     }
     draw(inCursor, inArrowEnd, posInCursor != null, posInArrowEnd != null)
 }
 
+canvas.onmousemove = mouseMove;
+canvas.onmousewheel = mouseMove;
+canvas.on
+
 canvas.onmousedown = function (e) {
     if (posInCursor == null && inCursor) {
-        posInCursor = { x: e.clientX - cursor.x - offset.left, y: e.clientY - cursor.y - offset.top }
-        initialPos = {x:e.clientX - offset.left, y: e.clientY-offset.top}
+        posInCursor = { x: e.pageX - cursor.x - offset.left, y: e.pageY - cursor.y - offset.top }
+        initialPos = {x:e.pageX - offset.left, y: e.pageY-offset.top}
     }
     if (posInArrowEnd == null && inArrowEnd) {
-        posInArrowEnd = { arg: arrowEnd.arg - Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))}
-        initialPos = {arg:Math.atan2((e.clientY - cursor.y - offset.top),(e.clientX - cursor.x - offset.left))}
+        posInArrowEnd = { arg: arrowEnd.arg - Math.atan2((e.pageY - cursor.y - offset.top),(e.pageX - cursor.x - offset.left))}
+        initialPos = {arg:Math.atan2((e.pageY - cursor.y - offset.top),(e.pageX - cursor.x - offset.left))}
     }
 }
 canvas.onmouseup = function (e) {
